@@ -1,6 +1,18 @@
 import React, { useState, useRef } from 'react';
 import type { ImageData } from '../types';
-import { fileToBase64 } from '../services/geminiService';
+
+const fileToBase64 = (file: File): Promise<ImageData> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const data = result.split(',')[1];
+      resolve({ data, mimeType: file.type });
+    };
+    reader.onerror = (error) => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
 
 interface FileInputProps {
   id: string;
