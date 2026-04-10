@@ -6,6 +6,9 @@ This project is built using:
 - **Backend**: Python + FastAPI located in the `/backend` directory
 - **Deployment**: Both tiers are packaged into a single Docker container. The FastAPI backend serves the built React app as static files.
 
+<img src="image/screen1.png" alt="Application Screenshot" />
+<img src="image/screen2.png" alt="Application Screenshot" />
+
 ## Run Locally (Development mode)
 
 **Prerequisites:** Node.js (for frontend) and Python 3.11+ (for backend).
@@ -41,7 +44,7 @@ This project is optimized for a simple, single-command deployment to Google Clou
    Execute the following command from the root directory of the project:
 
    ```bash
-   gcloud run deploy banana-milkshake-py \
+   gcloud run deploy banana-milkshake-url \
        --source . \
        --region us-central1 \
        --allow-unauthenticated \

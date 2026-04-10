@@ -22,6 +22,7 @@ const apiCall = async (endpoint: string, payload: any) => {
 };
 import Header from './components/Header';
 import FileInput from './components/FileInput';
+import ImagePickerPopup from './components/ImagePickerPopup';
 import CopyInput from './components/CopyInput';
 import Loader from './components/Loader';
 import ErrorAlert from './components/ErrorAlert';
@@ -33,6 +34,45 @@ const App: React.FC = () => {
   const [styleImage, setStyleImage] = useState<ImageData | null>(null);
   const [logoImage, setLogoImage] = useState<ImageData | null>(null);
   const [aspectRatio, setAspectRatio] = useState<string>('1:1');
+
+  const [isPickerOpen, setIsPickerOpen] = useState<boolean>(false);
+  const [activeCategory, setActiveCategory] = useState<'product' | 'style' | 'logo' | null>(null);
+
+  const fetchAndConvertToBase64 = async (url: string): Promise<ImageData> => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        const data = result.split(',')[1];
+        resolve({ data, mimeType: blob.type });
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  const handleSelectFromGallery = async (imageUrl: string) => {
+    if (!activeCategory) return;
+    try {
+      const imageData = await fetchAndConvertToBase64(imageUrl);
+      if (activeCategory === 'product') {
+        setProductImage(imageData);
+      } else if (activeCategory === 'style') {
+        setStyleImage(imageData);
+      } else if (activeCategory === 'logo') {
+        setLogoImage(imageData);
+      }
+    } catch (e) {
+      setError(`Failed to load image from gallery: ${(e as Error).message}`);
+    }
+  };
+
+  const openPicker = (category: 'product' | 'style' | 'logo') => {
+    setActiveCategory(category);
+    setIsPickerOpen(true);
+  };
 
   const [imageForAd, setImageForAd] = useState<ImageData | null>(null);
 
@@ -286,66 +326,11 @@ const App: React.FC = () => {
                       </h2>
                       <p className="text-sm text-gray-500 mt-2">Provide key assets for your image ads</p>
                     </div>
-                    <FileInput id="product-image" label="1. Product Photo" onFileChange={setProductImage} required isSelected={isOriginalImageInUse} />
-                    <FileInput id="style-image" label="2. Brand Style Guide / Ad Template" onFileChange={setStyleImage} required />
-                    <FileInput id="logo-image" label="3. Brand Logo" onFileChange={setLogoImage} required note="Transparent PNG recommended for best results." />
+                    <FileInput id="product-image" label="1. Product Photo" onFileChange={setProductImage} required isSelected={isOriginalImageInUse} onSelectGallery={() => openPicker('product')} value={productImage} />
+                    <FileInput id="style-image" label="2. Brand Style Guide / Ad Template" onFileChange={setStyleImage} required onSelectGallery={() => openPicker('style')} value={styleImage} />
+                    <FileInput id="logo-image" label="3. Brand Logo" onFileChange={setLogoImage} required note="Transparent PNG recommended for best results." onSelectGallery={() => openPicker('logo')} value={logoImage} />
 
-                    {productImage && (
-                      <div className="p-4 bg-green-50 rounded-lg border border-green-200 transition-all duration-300 space-y-4">
-                        <h3 className="text-lg font-bold text-gray-800 text-center">🍌 Upsize your order? 🍌</h3>
-                        <p className="text-sm text-gray-500 text-center -mt-2 mb-2">Optional step: Turn your product photo into a lifestyle image. You may skip this step if you prefer to use your uploaded product photo as it is.</p>
 
-                        <FileInput id="lifestyle-reference-image" label="Lifestyle Image Reference (Optional)" onFileChange={setLifestyleReferenceImage} note="Upload a base image to place your product into." />
-
-                        <p className="p-3 text-xs bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 rounded-r-lg">
-                          <strong>Important:</strong> For commercial use, you must obtain legal clearance for reference images containing any person's likeness.
-                        </p>
-
-                        <div>
-                          <label htmlFor="lifestyle-prompt" className="block text-sm font-medium text-gray-700 mb-2">
-                            {lifestylePromptLabel}
-                          </label>
-                          <textarea
-                            id="lifestyle-prompt"
-                            value={lifestylePrompt}
-                            onChange={(e) => setLifestylePrompt(e.target.value)}
-                            placeholder={lifestylePromptPlaceholder}
-                            className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#34A853] focus:border-[#34A853] transition bg-gray-100 hover:bg-gray-200/50 text-gray-900 placeholder:text-gray-500"
-                            rows={3}
-                          />
-                        </div>
-
-                        <button
-                          onClick={handleGenerateLifestyle}
-                          disabled={isGeneratingLifestyle || !lifestylePrompt.trim()}
-                          className="w-full flex items-center justify-center gap-2 bg-[#34A853] text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
-                        >
-                          {isGeneratingLifestyle ? (
-                            <>
-                              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                              <span>Upsizing...</span>
-                            </>
-                          ) : (
-                            <>
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" /></svg>
-                              <span>Upsize with Lifestyle Image!</span>
-                            </>
-                          )}
-                        </button>
-
-                        {generatedLifestyleImage && (
-                          <div className={`mt-4 p-3 rounded-lg border-2 ${isLifestyleImageInUse ? 'border-[#4285F4]' : 'border-transparent'}`}>
-                            {isLifestyleImageInUse && <div className="text-xs font-bold text-white bg-[#4285F4] rounded-full px-3 py-1 mb-2 inline-block">Selected for Ad</div>}
-                            <img src={`data:${generatedLifestyleImage.mimeType};base64,${generatedLifestyleImage.data}`} alt="Generated lifestyle" className="w-full rounded-md shadow-sm" />
-                            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                              {!isLifestyleImageInUse && <button onClick={() => setImageForAd(generatedLifestyleImage)} className="bg-blue-100 text-blue-800 font-semibold py-2 px-3 rounded-md hover:bg-blue-200 transition">Use this for Ads</button>}
-                              <button onClick={() => downloadImage(generatedLifestyleImage, 'lifestyle-image.png')} className="bg-gray-100 text-gray-800 font-semibold py-2 px-3 rounded-md hover:bg-gray-200 transition">Download</button>
-                            </div>
-                            {isLifestyleImageInUse && <button onClick={() => setImageForAd(productImage)} className="text-xs text-center w-full mt-2 text-gray-500 hover:underline">Revert to Original</button>}
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   {/* Copy Inputs */}
@@ -563,6 +548,12 @@ const App: React.FC = () => {
           </div>
         </div>
       </main>
+      <ImagePickerPopup
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        onSelect={handleSelectFromGallery}
+        category={activeCategory}
+      />
     </div>
   );
 };

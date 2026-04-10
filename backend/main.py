@@ -237,8 +237,8 @@ styleVariations = [
 ]
 
 async def generate_single_ad(req: GenerateAdsRequest, creative_direction: str):
-    #model = "gemini-3-pro-image-preview"
-    model = "gemini-3.1-flash-image-preview"
+    #model = "gemini-3-pro-image-preview".  # nano banana pro
+    model = "gemini-3.1-flash-image-preview" # nano banana 2
     has_copy = bool(req.adCopy.headline.strip())
     
     ad_copy_text = ""
